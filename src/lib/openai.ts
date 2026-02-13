@@ -100,3 +100,23 @@ Please generate a professional case note following the specified format.
     );
   }
 }
+
+// Error handling wrapper
+export function isOpenAIError(error: unknown): error is { status?: number; message?: string } {
+  return typeof error === 'object' && error !== null;
+}
+
+export function getErrorMessage(error: unknown): string {
+  if (isOpenAIError(error)) {
+    if (error.status === 401) {
+      return 'Invalid API key. Please check your OPENAI_API_KEY environment variable.';
+    }
+    if (error.status === 429) {
+      return 'Rate limit exceeded. Please try again in a moment.';
+    }
+    if (error.message) {
+      return error.message;
+    }
+  }
+  return 'An unexpected error occurred. Please try again.';
+}
