@@ -19,34 +19,53 @@ export const openai = new OpenAI({
 export async function analyzeObservations(
   observations: string
 ): Promise<GapAnalysis> {
-  const startTime = Date.now();
-
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
-    messages: [
-      { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-      { role: 'user', content: observations },
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.3, // Lower temperature for consistent analysis
-  });
-
-  const content = completion.choices[0].message.content;
-  if (!content) {
-    throw new Error('No response from OpenAI');
+  if (!observations || observations.trim().length === 0) {
+    throw new Error('Observations cannot be empty');
   }
 
-  const parsed = JSON.parse(content);
-  return parsed as GapAnalysis;
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
+        { role: 'user', content: observations },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.3,
+    });
+
+    const content = completion.choices[0].message.content;
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const parsed = JSON.parse(content);
+    return parsed as GapAnalysis;
+  } catch (error) {
+    console.error('Error analyzing observations:', error);
+    throw new Error(
+      error instanceof Error
+        ? `Failed to analyze observations: ${error.message}`
+        : 'Failed to analyze observations'
+    );
+  }
 }
 
 export async function generateCaseNote(
   request: GenerateCaseNoteRequest
 ): Promise<string> {
-  const { observations, metadata } = request;
+  if (!request.observations || Object.keys(request.observations).length === 0) {
+    throw new Error('Observations are required');
+  }
 
-  // Format the request for the LLM
-  const userMessage = `
+  if (!request.metadata?.childId || !request.metadata?.sessionDate) {
+    throw new Error('Metadata with childId and sessionDate is required');
+  }
+
+  try {
+    const { observations, metadata } = request;
+
+    const userMessage = `
 Metadata:
 ${JSON.stringify(metadata, null, 2)}
 
@@ -56,20 +75,28 @@ ${JSON.stringify(observations, null, 2)}
 Please generate a professional case note following the specified format.
 `;
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
-    messages: [
-      { role: 'system', content: GENERATION_SYSTEM_PROMPT },
-      { role: 'user', content: userMessage },
-    ],
-    temperature: 0.7, // Higher temperature for more natural narrative
-    max_tokens: 2000,
-  });
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        { role: 'system', content: GENERATION_SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
 
-  const content = completion.choices[0].message.content;
-  if (!content) {
-    throw new Error('No response from OpenAI');
+    const content = completion.choices[0].message.content;
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+
+    return content;
+  } catch (error) {
+    console.error('Error generating case note:', error);
+    throw new Error(
+      error instanceof Error
+        ? `Failed to generate case note: ${error.message}`
+        : 'Failed to generate case note'
+    );
   }
-
-  return content;
 }
