@@ -26,10 +26,6 @@
     --color-border-strong: 209 213 219;
   }
 
-  * {
-    @apply border-border;
-  }
-
   body {
     @apply bg-white text-gray-900 antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
