@@ -1,6 +1,9 @@
 {
   "name": "assessmate-poc",
   "version": "0.1.0",
+  "description": "AI-powered case note assistant for early intervention assessors",
+  "author": "Pranav",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "next dev",
